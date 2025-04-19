@@ -1,6 +1,6 @@
-from codeinline_agent import CodeInlineAgent
-import modal
 
+import modal
+import os
 app = modal.App("codeinline-agent")
 def install_dependencies():
     from transformers import AutoTokenizer, AutoModelForCausalLM
@@ -9,11 +9,15 @@ def install_dependencies():
     _ = AutoModelForCausalLM.from_pretrained(model_name)
 
 image = modal.Image.debian_slim(python_version="3.12").pip_install("transformers", "torch", "smolagents", "yfinance", "gradio")\
-.pip_install("bitsandbytes", "accelerate")\
-.run_function(install_dependencies)
+.pip_install("bitsandbytes", "accelerate", "litellm")\
+.add_local_python_source("codeinline_agent")
 
-@app.function(gpu="A100-80GB:2", image=image, timeout=6000)
+# .run_function(install_dependencies)\
+
+@app.function(image=image, timeout=6000)
 def run_codeinline_agent(user_query : str):
+    from codeinline_agent import CodeInlineAgent
+    os.environ["TOGETHER_API_KEY"] = "tgp_v1_hGgxxj1Jk7ShXa3iFYAHOg7EbAS51lxcDZjZvb1Fols"
     agent = CodeInlineAgent()
     for output in agent.run(user_query):
         print(output, end="")
